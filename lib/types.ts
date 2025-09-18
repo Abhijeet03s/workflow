@@ -1,93 +1,103 @@
+export type UserRole = 'manager' | 'cct' | 'client'
+
+export type PlanType = 'basic' | 'standard' | 'premium'
+
+export type TaskStatus = 'not-started' | 'in-progress' | 'complete'
+
+export type TaskType = 'post' | 'video'
+
+export interface User {
+  email: string
+  password: string
+  role: UserRole
+  name: string
+}
+
 export interface Client {
   id: string
-  name: string
+  businessName: string
+  ownerName: string
   email: string
   phone: string
-  company: string
-  address?: string
-  projectDescription: string
-  status: "active" | "inactive" | "completed"
-  createdAt: Date
-  stage: WorkflowStage
-  assignedEmployees: string[] // Changed to array for multiple employees
-  assets: Asset[]
-  msaCompleted: boolean
-  projectCompleted: boolean
+  plan: PlanType
+  msaFile?: string
+  assetsFile?: string
+  createdAt: string
+  createdBy: string
 }
 
-export interface Asset {
-  id: string
-  name: string
-  type: string
-  size: number
-  uploadedAt: Date
-  url: string
-}
-
-export interface Employee {
-  id: string
-  name: string
-  email: string
-  role: string
-  assignedClients: string[]
-  assignedVideoProjects?: VideoProject[]
-}
-
-export interface WorkflowStage {
-  id: number
-  name: string
-  description: string
-  completed: boolean
-  completedAt?: Date
-}
-
-export const WORKFLOW_STAGES = [
-  { id: 1, name: "Client Creation", description: "Initial client setup and onboarding" },
-  { id: 2, name: "Asset Collection", description: "Upload and organize client assets" },
-  { id: 3, name: "MSA Creation", description: "Master Service Agreement preparation" },
-  { id: 4, name: "Employee Assignment", description: "Assign project to team member" },
-  { id: 5, name: "Project Delivery", description: "Final delivery and completion" },
-] as const
-
-export const AI_VIDEO_STAGES = [
-  { id: 1, name: "Asset Review", description: "Review and validate client assets transferred by manager" },
-  { id: 2, name: "Script Generation", description: "Create AI-generated script based on client requirements" },
-  { id: 3, name: "Image Generation", description: "Generate AI images and visual assets for video" },
-  { id: 4, name: "Motion Creation", description: "Apply motion and animation to generated assets" },
-  { id: 5, name: "Voice Generation", description: "Generate AI voiceover and audio elements" },
-  { id: 6, name: "Video Editing", description: "Final video editing and post-production" },
-] as const
-
-export interface VideoProject {
+export interface Project {
   id: string
   clientId: string
-  clientName: string
-  company: string
-  employeeId: string // Added to track which employee is working on this
-  assignedAt: Date
-  currentStage: AIVideoStage
-  assets: Asset[]
-  script?: string
-  generatedImages: Asset[]
-  voiceSettings?: {
-    voice: string
-    speed: number
-    tone: string
-  }
-  videoSettings?: {
-    duration: number
-    style: string
-    resolution: string
-  }
-  completed: boolean
-  deliveredAt?: Date
+  monthYear: string // format: "2025-01"
+  totalPosts: number
+  totalVideos: number
+  completedPosts: number
+  completedVideos: number
+  status: 'active' | 'completed'
+  createdAt: string
 }
 
-export interface AIVideoStage {
-  id: number
-  name: string
-  description: string
-  completed: boolean
-  completedAt?: Date
-  notes?: string
+export interface Task {
+  id: string
+  projectId: string
+  clientId: string
+  type: TaskType
+  title: string
+  assignedTo?: string
+  assignedToName?: string
+  deliveryDate?: string
+  status: TaskStatus
+  createdAt: string
+  completedAt?: string
 }
+
+export interface VideoStage {
+  id: string
+  taskId: string
+  stageNumber: number
+  stageName: 'script' | 'images' | 'motion' | 'voice' | 'edit'
+  assignedTo: string
+  assignedToName: string
+  deliveryDate?: string
+  status: TaskStatus
+  dependsOn?: string // Previous stage ID
+  completedAt?: string
+}
+
+export interface CCTMember {
+  email: string
+  name: string
+  role: 'designer' | 'scriptWriter' | 'imageSpecialist' | 'motionDesigner' | 'voiceSpecialist' | 'videoEditor'
+}
+
+export const PLAN_DETAILS: Record<PlanType, { posts: number; videos: number }> = {
+  basic: { posts: 8, videos: 2 },
+  standard: { posts: 12, videos: 4 },
+  premium: { posts: 20, videos: 8 }
+}
+
+export const VIDEO_STAGE_NAMES = ['script', 'images', 'motion', 'voice', 'edit'] as const
+
+export const CCT_MEMBERS: CCTMember[] = [
+  { email: 'priya@company.com', name: 'Priya Sharma', role: 'designer' },
+  { email: 'vikram@company.com', name: 'Vikram Patel', role: 'designer' },
+  { email: 'sarah@company.com', name: 'Sarah Johnson', role: 'scriptWriter' },
+  { email: 'ananya@company.com', name: 'Ananya Gupta', role: 'scriptWriter' },
+  { email: 'karan@company.com', name: 'Karan Singh', role: 'imageSpecialist' },
+  { email: 'deepak@company.com', name: 'Deepak Kumar', role: 'imageSpecialist' },
+  { email: 'neha@company.com', name: 'Neha Verma', role: 'motionDesigner' },
+  { email: 'maya@company.com', name: 'Maya Reddy', role: 'motionDesigner' },
+  { email: 'rajesh@company.com', name: 'Rajesh Nair', role: 'voiceSpecialist' },
+  { email: 'alex@company.com', name: 'Alex Thompson', role: 'voiceSpecialist' },
+  { email: 'amit@company.com', name: 'Amit Mehta', role: 'videoEditor' },
+  { email: 'rohit@company.com', name: 'Rohit Sharma', role: 'videoEditor' }
+]
+
+export const STAGE_ROLE_MAPPING = {
+  script: 'scriptWriter',
+  images: 'imageSpecialist',
+  motion: 'motionDesigner',
+  voice: 'voiceSpecialist',
+  edit: 'videoEditor'
+} as const
