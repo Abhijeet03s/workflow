@@ -8,6 +8,15 @@ import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
   ArrowLeft,
   Building2,
   User,
@@ -19,12 +28,14 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  Download
+  Download,
+  UserPlus
 } from "lucide-react"
 import Link from "next/link"
 import { auth } from "@/lib/auth"
 import { dataStore } from "@/lib/data-store"
 import type { Client, Project, Task, VideoStage } from "@/lib/types"
+import { CCT_MEMBERS } from "@/lib/types"
 
 export default function ClientDetailsPage() {
   const router = useRouter()
@@ -35,6 +46,12 @@ export default function ClientDetailsPage() {
   const [project, setProject] = useState<Project | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [videoStages, setVideoStages] = useState<VideoStage[]>([])
+
+  // Assignment modal state
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [selectedVideoStage, setSelectedVideoStage] = useState<VideoStage | null>(null)
+  const [selectedAssignee, setSelectedAssignee] = useState<string>("")
 
   useEffect(() => {
     // Check authentication
@@ -60,7 +77,7 @@ export default function ClientDetailsPage() {
     })
 
     setClient(clientData)
-    setProject(projectData)
+    setProject(projectData || null)
     setTasks(tasksData)
     setVideoStages(allStages)
   }, [clientId, router])
@@ -93,6 +110,57 @@ export default function ClientDetailsPage() {
       default:
         return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  const openAssignModal = (task: Task) => {
+    setSelectedTask(task)
+    setSelectedVideoStage(null)
+    setSelectedAssignee(task.assignedTo || "unassigned")
+    setIsAssignModalOpen(true)
+  }
+
+  const openAssignModalForStage = (stage: VideoStage) => {
+    setSelectedTask(null)
+    setSelectedVideoStage(stage)
+    setSelectedAssignee(stage.assignedTo || "unassigned")
+    setIsAssignModalOpen(true)
+  }
+
+  const handleAssignment = () => {
+    if (!selectedAssignee) return
+
+    const isUnassigned = selectedAssignee === 'unassigned'
+    const assigneeMember = isUnassigned ? null : CCT_MEMBERS.find(m => m.email === selectedAssignee)
+
+    if (selectedTask) {
+      // Update task with new assignee
+      dataStore.updateTask(selectedTask.id, {
+        assignedTo: isUnassigned ? undefined : selectedAssignee,
+        assignedToName: isUnassigned ? undefined : assigneeMember?.name
+      })
+    } else if (selectedVideoStage) {
+      // Update video stage with new assignee
+      dataStore.updateVideoStage(selectedVideoStage.id, {
+        assignedTo: isUnassigned ? '' : selectedAssignee,
+        assignedToName: isUnassigned ? '' : assigneeMember?.name
+      })
+    }
+
+    // Refresh data
+    const projectData = dataStore.getCurrentProjectForClient(clientId)
+    const tasksData = projectData ? dataStore.getTasksByProject(projectData.id) : []
+    const allStages: VideoStage[] = []
+    tasksData.filter(t => t.type === 'video').forEach(task => {
+      allStages.push(...dataStore.getVideoStagesByTask(task.id))
+    })
+    setTasks(tasksData)
+    setVideoStages(allStages)
+
+    // Close modal
+    setIsAssignModalOpen(false)
+    setSelectedTask(null)
+    setSelectedVideoStage(null)
+    setSelectedAssignee("")
   }
 
   const getPlanBadgeColor = (plan: string) => {
@@ -310,6 +378,13 @@ export default function ClientDetailsPage() {
                         <Badge className={getStatusColor(task.status)}>
                           {task.status.replace('-', ' ')}
                         </Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openAssignModal(task)}
+                        >
+                          <UserPlus className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -364,6 +439,14 @@ export default function ClientDetailsPage() {
                               <p className="text-xs text-gray-500">
                                 {formatDate(stage.deliveryDate)}
                               </p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="w-full mt-2 h-6"
+                                onClick={() => openAssignModalForStage(stage)}
+                              >
+                                <UserPlus className="h-3 w-3" />
+                              </Button>
                             </div>
                           ))}
                         </div>
@@ -376,6 +459,81 @@ export default function ClientDetailsPage() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Assignment Modal */}
+      <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Task</DialogTitle>
+            <DialogDescription>
+              Assign or reassign this task to a CCT member
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{selectedTask ? 'Task' : 'Video Stage'}</Label>
+              <p className="text-sm font-medium">
+                {selectedTask?.title ||
+                 (selectedVideoStage && `${selectedVideoStage.stageName.charAt(0).toUpperCase() + selectedVideoStage.stageName.slice(1)} Stage`)}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="assignee">Assign to</Label>
+              <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a CCT member" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {(() => {
+                    // Filter CCT members based on task type or video stage
+                    let filteredMembers = CCT_MEMBERS
+
+                    if (selectedTask) {
+                      if (selectedTask.type === 'post' || selectedTask.type === 'infographic') {
+                        filteredMembers = CCT_MEMBERS.filter(m => m.role === 'designer')
+                      } else if (selectedTask.type === 'newsletter') {
+                        filteredMembers = CCT_MEMBERS.filter(m => m.role === 'scriptWriter')
+                      } else if (selectedTask.type === 'podcast') {
+                        filteredMembers = CCT_MEMBERS.filter(m => m.role === 'voiceSpecialist')
+                      }
+                    } else if (selectedVideoStage) {
+                      // Filter based on video stage type
+                      const stageRoleMap: Record<string, string> = {
+                        script: 'scriptWriter',
+                        images: 'imageSpecialist',
+                        motion: 'motionDesigner',
+                        voice: 'voiceSpecialist',
+                        edit: 'videoEditor'
+                      }
+                      const requiredRole = stageRoleMap[selectedVideoStage.stageName]
+                      if (requiredRole) {
+                        filteredMembers = CCT_MEMBERS.filter(m => m.role === requiredRole)
+                      }
+                    }
+
+                    return filteredMembers.map(member => (
+                      <SelectItem key={member.email} value={member.email}>
+                        {member.name} - {member.role}
+                      </SelectItem>
+                    ))
+                  })()}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAssignment}>
+                Assign
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

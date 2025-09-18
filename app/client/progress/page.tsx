@@ -15,7 +15,6 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  Download,
   Calendar
 } from "lucide-react"
 import Link from "next/link"
@@ -53,7 +52,7 @@ export default function ClientProgressPage() {
     })
 
     setClient(currentClient)
-    setProject(currentProject)
+    setProject(currentProject || null)
     setTasks(projectTasks)
     setVideoStages(allStages)
   }, [router])
@@ -93,9 +92,6 @@ export default function ClientProgressPage() {
     return new Date(dateString).toLocaleDateString()
   }
 
-  const handleDownload = (taskTitle: string) => {
-    alert(`Download started for: ${taskTitle}`)
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -183,15 +179,6 @@ export default function ClientProgressPage() {
                         <Badge className={getStatusColor(task.status)}>
                           {task.status.replace('-', ' ')}
                         </Badge>
-                        {task.status === 'complete' && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleDownload(task.title)}
-                          >
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
-                          </Button>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -224,15 +211,6 @@ export default function ClientProgressPage() {
                           <div className="flex items-center gap-3">
                             <span className="text-sm text-gray-600">{videoProgress}% complete</span>
                             <Progress value={videoProgress} className="w-24" />
-                            {task.status === 'complete' && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleDownload(task.title)}
-                              >
-                                <Download className="h-4 w-4 mr-1" />
-                                Download
-                              </Button>
-                            )}
                           </div>
                         </div>
 
@@ -245,13 +223,12 @@ export default function ClientProgressPage() {
                             return (
                               <div
                                 key={stage.id}
-                                className={`p-4 rounded-lg border-2 transition-all ${
-                                  isComplete
-                                    ? 'border-green-200 bg-green-50'
-                                    : isActive
+                                className={`p-4 rounded-lg border-2 transition-all ${isComplete
+                                  ? 'border-green-200 bg-green-50'
+                                  : isActive
                                     ? 'border-blue-200 bg-blue-50'
                                     : 'border-gray-200 bg-gray-50'
-                                }`}
+                                  }`}
                               >
                                 <div className="flex items-center gap-2 mb-3">
                                   {getStatusIcon(stage.status)}
@@ -283,10 +260,13 @@ export default function ClientProgressPage() {
                         <div className="mt-4 pt-4 border-t">
                           <p className="text-sm text-gray-600">
                             Current Stage: <span className="font-medium">
-                              {stages.find(s => s.status === 'in-progress')?.stageName
-                                ?.charAt(0).toUpperCase() +
-                                stages.find(s => s.status === 'in-progress')?.stageName?.slice(1) ||
-                                (videoProgress === 100 ? 'Completed' : 'Script')}
+                              {(() => {
+                                const currentStage = stages.find(s => s.status === 'in-progress')
+                                if (currentStage?.stageName) {
+                                  return currentStage.stageName.charAt(0).toUpperCase() + currentStage.stageName.slice(1)
+                                }
+                                return videoProgress === 100 ? 'Completed' : 'Script'
+                              })()}
                             </span>
                           </p>
                         </div>

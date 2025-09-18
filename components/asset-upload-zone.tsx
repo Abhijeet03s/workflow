@@ -50,7 +50,38 @@ export function AssetUploadZone({ clientId, onUploadComplete }: AssetUploadZoneP
   }, [])
 
   const handleFiles = (files: File[]) => {
-    const newUploadingFiles: UploadingFile[] = files.map((file) => ({
+    // Validate file types
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'video/mp4',
+      'video/quicktime',
+      'application/zip',
+      'application/x-rar-compressed',
+      'application/vnd.rar'
+    ]
+
+    const validFiles = files.filter(file => {
+      const isValidType = allowedTypes.some(type => file.type === type || file.type.startsWith(type.split('/')[0]))
+      const isValidSize = file.size <= 50 * 1024 * 1024 // 50MB limit
+
+      if (!isValidType) {
+        alert(`File "${file.name}" has unsupported format`)
+        return false
+      }
+      if (!isValidSize) {
+        alert(`File "${file.name}" exceeds 50MB limit`)
+        return false
+      }
+      return true
+    })
+
+    const newUploadingFiles: UploadingFile[] = validFiles.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       name: file.name,
       size: file.size,
@@ -113,9 +144,8 @@ export function AssetUploadZone({ clientId, onUploadComplete }: AssetUploadZoneP
   return (
     <div className="space-y-4">
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          isDragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-muted-foreground/50"
-        }`}
+        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-muted-foreground/50"
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -129,7 +159,7 @@ export function AssetUploadZone({ clientId, onUploadComplete }: AssetUploadZoneP
           onChange={handleFileSelect}
           className="hidden"
           id="file-upload"
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.zip,.rar"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.mp4,.mov,.zip,.rar"
         />
         <Button asChild>
           <label htmlFor="file-upload" className="cursor-pointer">
@@ -138,7 +168,7 @@ export function AssetUploadZone({ clientId, onUploadComplete }: AssetUploadZoneP
           </label>
         </Button>
         <p className="text-xs text-muted-foreground mt-2">
-          Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF, ZIP, RAR (Max 10MB each)
+          Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF, MP4, MOV, ZIP, RAR (Max 50MB each)
         </p>
       </div>
 

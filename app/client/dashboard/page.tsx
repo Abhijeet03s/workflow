@@ -43,7 +43,7 @@ export default function ClientDashboard() {
     const projectTasks = currentProject ? dataStore.getTasksByProject(currentProject.id) : []
 
     setClient(currentClient)
-    setProject(currentProject)
+    setProject(currentProject || null)
     setTasks(projectTasks)
   }, [router])
 
@@ -200,7 +200,7 @@ export default function ClientDashboard() {
             <CardContent>
               <div className="text-2xl font-bold">{project.completedPosts + project.completedVideos}</div>
               <p className="text-xs text-muted-foreground">
-                Ready for download
+                Completed items
               </p>
             </CardContent>
           </Card>
@@ -251,9 +251,9 @@ export default function ClientDashboard() {
                         </p>
                       </div>
                     </div>
-                    <Button size="sm" variant="outline">
-                      Download
-                    </Button>
+                    <Badge className="bg-green-100 text-green-800">
+                      Completed
+                    </Badge>
                   </div>
                 ))
               }

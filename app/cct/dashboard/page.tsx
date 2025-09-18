@@ -27,7 +27,9 @@ import {
   FileText,
   Video,
   LogOut,
-  Edit
+  Edit,
+  Folder,
+  Download
 } from "lucide-react"
 import Link from "next/link"
 import { auth } from "@/lib/auth"
@@ -243,6 +245,10 @@ export default function CCTDashboard() {
             <TabsTrigger value="completed">
               Completed ({completedTasks.length + completedStages.length})
             </TabsTrigger>
+            <TabsTrigger value="assets">
+              <Folder className="h-4 w-4 mr-2" />
+              Client Assets
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-4">
@@ -316,8 +322,6 @@ export default function CCTDashboard() {
                           size="sm"
                           variant="outline"
                           onClick={() => openUpdateModal(stage)}
-                          disabled={stage.dependsOn &&
-                            videoStages.find(s => s.id === stage.dependsOn)?.status !== 'complete'}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -466,6 +470,75 @@ export default function CCTDashboard() {
                       </Badge>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="assets">
+            <Card>
+              <CardHeader>
+                <CardTitle>Client Assets</CardTitle>
+                <CardDescription>Access shared assets and resources from clients</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {clients.map(client => {
+                    const clientTasks = tasks.filter(t => t.clientId === client.id)
+                    const clientStages = videoStages.filter(s =>
+                      tasks.some(t => t.id === s.taskId && t.clientId === client.id)
+                    )
+
+                    if (clientTasks.length === 0 && clientStages.length === 0) return null
+
+                    return (
+                      <div key={client.id} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-5 w-5 text-gray-500" />
+                            <h3 className="font-semibold">{client.businessName}</h3>
+                            <Badge variant="outline">{client.plan}</Badge>
+                          </div>
+                        </div>
+
+                        <div className="grid gap-3 md:grid-cols-2">
+                          {client.msaFile && (
+                            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                              <FileText className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm flex-1">MSA: {client.msaFile}</span>
+                              <Button size="sm" variant="ghost">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                          {client.assetsFile && (
+                            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                              <Folder className="h-4 w-4 text-green-600" />
+                              <span className="text-sm flex-1">Assets: {client.assetsFile}</span>
+                              <Button size="sm" variant="ghost">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+
+                        <p className="text-xs text-gray-500 mt-3">
+                          You have {clientTasks.length} posts and {clientStages.length} video stages for this client
+                        </p>
+                      </div>
+                    )
+                  })}
+
+                  {clients.every(client => {
+                    const clientTasks = tasks.filter(t => t.clientId === client.id)
+                    return clientTasks.length === 0
+                  }) && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Folder className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p>No client assets available</p>
+                      <p className="text-sm">Assets will appear here when you have tasks assigned</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

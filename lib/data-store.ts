@@ -58,6 +58,18 @@ class DataStore {
     return newClient
   }
 
+  addAssetToClient(clientId: string, asset: { name: string; type: string; size: number; url: string }): boolean {
+    const clients = this.getClients()
+    const clientIndex = clients.findIndex(c => c.id === clientId)
+
+    if (clientIndex === -1) return false
+
+    // In a real app, you would store assets in a separate collection
+    // For now, we'll just return true to indicate success
+    console.log('Asset added:', asset.name, 'for client:', clientId)
+    return true
+  }
+
   // Project operations
   getProjects(): Project[] {
     if (typeof window === 'undefined') return []
@@ -88,8 +100,14 @@ class DataStore {
       monthYear: this.getCurrentMonth(),
       totalPosts: planDetails.posts,
       totalVideos: planDetails.videos,
+      totalInfographics: planDetails.infographics,
+      totalNewsletters: planDetails.newsletters,
+      totalPodcasts: planDetails.podcasts,
       completedPosts: 0,
       completedVideos: 0,
+      completedInfographics: 0,
+      completedNewsletters: 0,
+      completedPodcasts: 0,
       status: 'active',
       createdAt: new Date().toISOString()
     }
@@ -138,15 +156,14 @@ class DataStore {
 
     // Generate post tasks
     for (let i = 1; i <= project.totalPosts; i++) {
-      const designer = this.getRandomCCTMember('designer')
       tasks.push({
         id: this.generateId('task'),
         projectId: project.id,
         clientId: client.id,
         type: 'post',
         title: `Social Media Post #${i}`,
-        assignedTo: designer?.email,
-        assignedToName: designer?.name,
+        assignedTo: undefined,
+        assignedToName: undefined,
         status: 'not-started',
         createdAt: new Date().toISOString()
       })
@@ -167,6 +184,51 @@ class DataStore {
 
       // Generate video stages for this video task
       this.generateVideoStagesForTask(videoTaskId)
+    }
+
+    // Generate infographic tasks
+    for (let i = 1; i <= project.totalInfographics; i++) {
+      tasks.push({
+        id: this.generateId('task'),
+        projectId: project.id,
+        clientId: client.id,
+        type: 'infographic',
+        title: `Infographic #${i}`,
+        assignedTo: undefined,
+        assignedToName: undefined,
+        status: 'not-started',
+        createdAt: new Date().toISOString()
+      })
+    }
+
+    // Generate newsletter tasks
+    for (let i = 1; i <= project.totalNewsletters; i++) {
+      tasks.push({
+        id: this.generateId('task'),
+        projectId: project.id,
+        clientId: client.id,
+        type: 'newsletter',
+        title: `Newsletter #${i}`,
+        assignedTo: undefined,
+        assignedToName: undefined,
+        status: 'not-started',
+        createdAt: new Date().toISOString()
+      })
+    }
+
+    // Generate podcast tasks
+    for (let i = 1; i <= project.totalPodcasts; i++) {
+      tasks.push({
+        id: this.generateId('task'),
+        projectId: project.id,
+        clientId: client.id,
+        type: 'podcast',
+        title: `Podcast Episode #${i}`,
+        assignedTo: undefined,
+        assignedToName: undefined,
+        status: 'not-started',
+        createdAt: new Date().toISOString()
+      })
     }
 
     const existingTasks = this.getTasks()
@@ -195,6 +257,12 @@ class DataStore {
           if (allStagesComplete) {
             projectUpdate.completedVideos = project.completedVideos + 1
           }
+        } else if (updatedTask.type === 'infographic') {
+          projectUpdate.completedInfographics = (project.completedInfographics || 0) + 1
+        } else if (updatedTask.type === 'newsletter') {
+          projectUpdate.completedNewsletters = (project.completedNewsletters || 0) + 1
+        } else if (updatedTask.type === 'podcast') {
+          projectUpdate.completedPodcasts = (project.completedPodcasts || 0) + 1
         }
         this.updateProject(project.id, projectUpdate)
       }
@@ -231,16 +299,13 @@ class DataStore {
     let previousStageId: string | undefined
 
     VIDEO_STAGE_NAMES.forEach((stageName, index) => {
-      const role = STAGE_ROLE_MAPPING[stageName]
-      const assignee = this.getRandomCCTMember(role)
-
       const stage: VideoStage = {
         id: this.generateId('stage'),
         taskId,
         stageNumber: index + 1,
         stageName,
-        assignedTo: assignee?.email || '',
-        assignedToName: assignee?.name || '',
+        assignedTo: '',
+        assignedToName: '',
         status: 'not-started',
         dependsOn: previousStageId
       }

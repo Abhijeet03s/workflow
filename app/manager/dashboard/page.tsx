@@ -10,7 +10,6 @@ import {
   Users,
   Briefcase,
   CheckCircle,
-  Clock,
   Plus,
   Eye,
   LogOut,
@@ -92,6 +91,17 @@ export default function ManagerDashboard() {
               )}
             </div>
             <div className="flex items-center space-x-4">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  if (confirm('This will reset all data and reload with sample data. Continue?')) {
+                    localStorage.clear()
+                    window.location.reload()
+                  }
+                }}
+              >
+                Reset Data
+              </Button>
               <Button asChild>
                 <Link href="/manager/create-client">
                   <Plus className="h-4 w-4 mr-2" />
@@ -181,9 +191,11 @@ export default function ManagerDashboard() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-semibold text-lg">{client.businessName}</h3>
-                        <Badge variant={getPlanBadgeColor(client.plan)}>
-                          {client.plan.toUpperCase()}
-                        </Badge>
+                        {client.plan && (
+                          <Badge variant={getPlanBadgeColor(client.plan)}>
+                            {client.plan.toUpperCase()}
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-gray-600 mb-1">
                         Owner: {client.ownerName} • {client.email}

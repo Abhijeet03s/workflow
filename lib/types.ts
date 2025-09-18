@@ -4,7 +4,7 @@ export type PlanType = 'basic' | 'standard' | 'premium'
 
 export type TaskStatus = 'not-started' | 'in-progress' | 'complete'
 
-export type TaskType = 'post' | 'video'
+export type TaskType = 'post' | 'video' | 'infographic' | 'newsletter' | 'podcast'
 
 export interface User {
   email: string
@@ -32,8 +32,14 @@ export interface Project {
   monthYear: string // format: "2025-01"
   totalPosts: number
   totalVideos: number
+  totalInfographics: number
+  totalNewsletters: number
+  totalPodcasts: number
   completedPosts: number
   completedVideos: number
+  completedInfographics: number
+  completedNewsletters: number
+  completedPodcasts: number
   status: 'active' | 'completed'
   createdAt: string
 }
@@ -71,10 +77,10 @@ export interface CCTMember {
   role: 'designer' | 'scriptWriter' | 'imageSpecialist' | 'motionDesigner' | 'voiceSpecialist' | 'videoEditor'
 }
 
-export const PLAN_DETAILS: Record<PlanType, { posts: number; videos: number }> = {
-  basic: { posts: 8, videos: 2 },
-  standard: { posts: 12, videos: 4 },
-  premium: { posts: 20, videos: 8 }
+export const PLAN_DETAILS: Record<PlanType, { posts: number; videos: number; infographics: number; newsletters: number; podcasts: number }> = {
+  basic: { posts: 8, videos: 2, infographics: 2, newsletters: 1, podcasts: 0 },
+  standard: { posts: 12, videos: 4, infographics: 4, newsletters: 2, podcasts: 1 },
+  premium: { posts: 20, videos: 8, infographics: 6, newsletters: 4, podcasts: 2 }
 }
 
 export const VIDEO_STAGE_NAMES = ['script', 'images', 'motion', 'voice', 'edit'] as const
